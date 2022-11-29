@@ -21,14 +21,13 @@ namespace jsBridge {
 RCT_EXPORT_MODULE()
 
 std::map<std::string, std::shared_ptr<facebook::jsi::Function>> jsListeners_;
-RCTCxxBridge *jsBridge_cxxBridge;
 RCTBridge *jsBridge_bridge;
 jsi::Runtime *jsBridge_runtime;
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install) {
     NSLog(@"Installing JsiBridge polyfill Bindings...");
     jsBridge_bridge = [RCTBridge currentBridge];
-    jsBridge_cxxBridge = (RCTCxxBridge*)jsBridge_bridge;
+    auto jsBridge_cxxBridge = (RCTCxxBridge*)jsBridge_bridge;
     if (jsBridge_cxxBridge == nil) return @false;
     jsBridge_runtime = (jsi::Runtime*) jsBridge_cxxBridge.runtime;
     if (jsBridge_runtime == nil) return @false;
