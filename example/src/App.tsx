@@ -1,18 +1,33 @@
 import * as React from 'react';
 
-import { StyleSheet, View, Text } from 'react-native';
-import { multiply } from 'react-native-jsi-bridge';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { JsiBridge } from 'react-native-jsi-bridge';
 
 export default function App() {
-  const [result, setResult] = React.useState<number | undefined>();
+  const [result, setResult] = React.useState<string | undefined>();
 
   React.useEffect(() => {
-    multiply(3, 7).then(setResult);
+    JsiBridge.on('onData', (data) => {
+      console.log('[App.onData]', data);
+      setResult(data);
+    });
+
+    return () => {
+      JsiBridge.off('onData');
+    };
   }, []);
 
   return (
     <View style={styles.container}>
       <Text>Result: {result}</Text>
+
+      <TouchableOpacity
+        onPress={() =>
+          JsiBridge.emit('jsData', JSON.stringify({ user: 'ser' }))
+        }
+      >
+        <Text>Send event</Text>
+      </TouchableOpacity>
     </View>
   );
 }

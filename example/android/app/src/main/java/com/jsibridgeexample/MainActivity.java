@@ -1,9 +1,12 @@
 package com.jsibridgeexample;
 
+import android.os.Bundle;
+
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
 import com.facebook.react.defaults.DefaultReactActivityDelegate;
+import com.jsibridge.JsiBridge;
 
 public class MainActivity extends ReactActivity {
 
@@ -14,6 +17,17 @@ public class MainActivity extends ReactActivity {
   @Override
   protected String getMainComponentName() {
     return "JsiBridgeExample";
+  }
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    JsiBridge.off("jsData");
+    JsiBridge.on("jsData", data -> {
+      System.out.println("😃 jsData " + data);
+      JsiBridge.emit("onData", "{\"name\": \"Sergei2\"}");
+    });
   }
 
   /**

@@ -1,5 +1,7 @@
 package com.jsibridge;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import com.facebook.react.bridge.Promise;
@@ -25,8 +27,13 @@ public class JsiBridgeModule extends ReactContextBaseJavaModule {
 
   // Example method
   // See https://reactnative.dev/docs/native-modules-android
-  @ReactMethod
-  public void multiply(double a, double b, Promise promise) {
-    promise.resolve(a * b);
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  public void install() {
+    try {
+      System.loadLibrary("jsiBridge");
+      JsiBridge.instance.install(getReactApplicationContext());
+    } catch (Exception exception) {
+      Log.e(NAME, "Failed to install JSI Bindings!", exception);
+    }
   }
 }

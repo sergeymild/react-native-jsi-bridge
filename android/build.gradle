@@ -30,14 +30,74 @@ def getExtOrIntegerDefault(name) {
   return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["JsiBridge_" + name]).toInteger()
 }
 
+def safeExtGet(prop, fallback) {
+  rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+def reactNativeArchitectures() {
+  def value = project.getProperties().get("reactNativeArchitectures")
+  return value ? value.split(",") : ["armeabi-v7a", "arm64-v8a"]
+}
+
+def resolveReactNativeDirectory() {
+  def reactNativeLocation = safeExtGet("REACT_NATIVE_NODE_MODULES_DIR", null)
+  if (reactNativeLocation != null) {
+    return file(reactNativeLocation)
+  }
+
+  // monorepo workaround
+  // react-native can be hoisted or in project's own node_modules
+  def reactNativeFromProjectNodeModules = file("${rootProject.projectDir}/../node_modules/react-native")
+  if (reactNativeFromProjectNodeModules.exists()) {
+    return reactNativeFromProjectNodeModules
+  }
+
+  throw new GradleException(
+    "[Reanimated] Unable to resolve react-native location in " +
+      "node_modules. You should project extension property (in app/build.gradle) " +
+      "`REACT_NATIVE_NODE_MODULES_DIR` with path to react-native."
+  )
+}
+
+def reactNativeRootDir = resolveReactNativeDirectory()
+
 android {
+  buildFeatures {
+    prefab true
+  }
   compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
+  ndkVersion getExtOrDefault('ndkVersion')
 
   defaultConfig {
     minSdkVersion getExtOrIntegerDefault("minSdkVersion")
     targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
     buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
+
+    externalNativeBuild {
+      cmake {
+        cppFlags "-fexceptions", "-frtti", "-std=c++1y", "-DONANDROID"
+        abiFilters "armeabi-v7a", "arm64-v8a"
+        arguments '-DANDROID_STL=c++_shared',
+          "-DREACT_NATIVE_DIR=${reactNativeRootDir.path}",
+          "-DANDROID_CPP_FEATURES=rtti exceptions",
+          '-DANDROID_ARM_NEON=TRUE'
+      }
+    }
+    ndk {
+      abiFilters (*reactNativeArchitectures())
+    }
   }
+
+  dexOptions {
+    javaMaxHeapSize "4g"
+  }
+
+  externalNativeBuild {
+    cmake {
+      path "CMakeLists.txt"
+    }
+  }
+
   buildTypes {
     release {
       minifyEnabled false
@@ -51,6 +111,34 @@ android {
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_1_8
     targetCompatibility JavaVersion.VERSION_1_8
+  }
+
+  packagingOptions {
+    // Exclude all Libraries that are already present in the user's app (through React Native or by him installing REA)
+    excludes = [
+      "META-INF",
+      "META-INF/**",
+      "**/libc++_shared.so",
+      "**/libfbjni.so",
+      "**/libjsi.so",
+      "**/libfolly_json.so",
+      "**/libfolly_runtime.so",
+      "**/libglog.so",
+      "**/libhermes.so",
+      "**/libhermes-executor-debug.so",
+      "**/libhermes_executor.so",
+      "**/libreactnativejni.so",
+      "**/libturbomodulejsijni.so",
+      "**/libreact_nativemodule_core.so",
+      "**/libjscexecutor.so",
+      "**/libv8executor.so",
+    ]
+    exclude "META-INF/**"
+  }
+
+  configurations {
+    extractHeaders
+    extractJNI
   }
 
 }

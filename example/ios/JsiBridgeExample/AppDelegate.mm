@@ -1,6 +1,7 @@
 #import "AppDelegate.h"
 
 #import <React/RCTBundleURLProvider.h>
+#import "JsiBridgeEmitter.h"
 
 @implementation AppDelegate
 
@@ -10,6 +11,14 @@
   // You can add your custom initial props in the dictionary below.
   // They will be passed down to the ViewController used by React Native.
   self.initialProps = @{};
+  
+  [[JsiBridgeEmitter shared] on:@"jsData" with:^(NSString *data) {
+      NSLog(@"😃jsD %@", data);
+      
+      [[JsiBridgeEmitter shared] emit:@"onData" with:@"{\"s\": 2}"];
+    }];
+    
+    [[JsiBridgeEmitter shared] off:@""];
 
   return [super application:application didFinishLaunchingWithOptions:launchOptions];
 }
